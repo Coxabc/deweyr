@@ -7,9 +7,9 @@
 dewey_download(api_key, folder_id, download_path = NULL, python_path = NULL)
 }
 \arguments{
-\item{api_key}{Character string with the API key for deweypy}
+\item{api_key}{Character string with the API key for deweypy authentication}
 
-\item{folder_id}{Character string with the folder ID to download from}
+\item{folder_id}{Character string with the Dewey folder ID or URL to download from}
 
 \item{download_path}{Character string specifying where to download files.
 If NULL (default), uses the default directory from \code{get_download_dir()}}
@@ -18,7 +18,18 @@ If NULL (default), uses the default directory from \code{get_download_dir()}}
 If NULL (default), will automatically search for Python on the system.}
 }
 \description{
-Downloads files from a specified folder using the deweypy Python package
+Downloads all files from a Dewey folder using the deweypy Python package.
+This function interfaces with the Dewey file management system to batch download
+files from a specified folder to your local machine.
+}
+\details{
+The function performs the following steps:
+\itemize{
+\item Locates Python executable (auto-detect or use provided path)
+\item Validates the folder ID/URL
+\item Creates download directory if it doesn't exist
+\item Executes deweypy's speedy-download command
+}
 }
 \examples{
 \dontrun{
