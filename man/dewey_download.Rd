@@ -4,7 +4,15 @@
 \alias{dewey_download}
 \title{Download Files Using Deweypy}
 \usage{
-dewey_download(api_key, folder_id, download_path = NULL, python_path = NULL)
+dewey_download(
+  api_key,
+  folder_id,
+  download_path = NULL,
+  python_path = NULL,
+  num_workers = NULL,
+  partition_key_before = NULL,
+  partition_key_after = NULL
+)
 }
 \arguments{
 \item{api_key}{Character string with the API key for deweypy authentication}
@@ -16,6 +24,18 @@ If NULL (default), uses the default directory from \code{get_download_dir()}}
 
 \item{python_path}{Character string specifying the path to Python executable.
 If NULL (default), will automatically search for Python on the system.}
+
+\item{num_workers}{Integer specifying number of workers for multi-threaded downloads.
+Default is NULL (uses deweypy's default of 8). Only modify if you have specific
+performance requirements; most users should leave this unchanged.}
+
+\item{partition_key_before}{Character string in YYYY-MM-DD format. If specified,
+includes all partitions up to and including this date. Only relevant for
+date-partitioned datasets. Leave NULL to download all data.}
+
+\item{partition_key_after}{Character string in YYYY-MM-DD format. If specified,
+includes all partitions from and including this date onward. Only relevant for
+date-partitioned datasets. Leave NULL to download all data.}
 }
 \description{
 Downloads all files from a Dewey folder using the deweypy Python package.
@@ -31,9 +51,16 @@ The function performs the following steps:
 \item Executes deweypy's speedy-download command
 }
 }
+\section{Advanced Options}{
+
+The \code{num_workers}, \code{partition_key_before}, and \code{partition_key_after}
+parameters are advanced options that most users won't need to modify. The default
+settings work well for typical use cases.
+}
+
 \examples{
 \dontrun{
-# Auto-detect Python path, default download location
+# Basic usage - auto-detect Python path, default download location
 dewey_download(api_key = "your-api-key", folder_id = "folder123")
 
 # Specify custom download path
@@ -43,11 +70,18 @@ dewey_download(
   download_path = "C:/Downloads/my-files"
 )
 
-# Specify Python path manually
+# Advanced: Download only recent data from partitioned dataset
 dewey_download(
   api_key = "your-api-key", 
   folder_id = "folder123",
-  python_path = "C:/Python313/python.exe"
+  partition_key_after = "2024-01-01"
+)
+
+# Advanced: Adjust workers for specific performance needs
+dewey_download(
+  api_key = "your-api-key", 
+  folder_id = "folder123",
+  num_workers = 4
 )
 }
 }

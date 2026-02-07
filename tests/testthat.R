@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(deweyrdownload)
+library(deweyr)
 
-test_check("deweyrdownload")
+test_check("deweyr")

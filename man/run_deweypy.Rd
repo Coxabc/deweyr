@@ -4,7 +4,15 @@
 \alias{run_deweypy}
 \title{Execute Deweypy System Command}
 \usage{
-run_deweypy(python_path, api_key, download_path, folder_id)
+run_deweypy(
+  python_path,
+  api_key,
+  download_path,
+  folder_id,
+  num_workers = NULL,
+  partition_key_before = NULL,
+  partition_key_after = NULL
+)
 }
 \arguments{
 \item{python_path}{Character string path to Python executable}
@@ -14,8 +22,21 @@ run_deweypy(python_path, api_key, download_path, folder_id)
 \item{download_path}{Character string with download destination directory}
 
 \item{folder_id}{Character string with Dewey folder ID}
+
+\item{num_workers}{Integer specifying number of workers for multi-threaded downloads.
+If NULL (default), deweypy uses its default of 8 workers.}
+
+\item{partition_key_before}{Character string in YYYY-MM-DD format for partition filtering.
+If provided, includes all partitions up to and including this date.}
+
+\item{partition_key_after}{Character string in YYYY-MM-DD format for partition filtering.
+If provided, includes all partitions from and including this date onward.}
+}
+\value{
+The exit status from \code{system2()}, invisibly
 }
 \description{
-Internal function to run the deweypy Python module with specified parameters
+Internal function to run the deweypy Python module with specified parameters.
+Constructs and executes the command-line call to deweypy's speedy-download.
 }
 \keyword{internal}
