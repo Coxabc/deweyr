@@ -54,8 +54,6 @@ run_deweypy_uv <- function(api_key,
   # Execute command
   system2(
     "uvx",
-    args = args,
-    stdout = TRUE,
-    stderr = TRUE
+    args = args
   )
 }
