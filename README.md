@@ -122,4 +122,4 @@ dewey_download(
 ```
 ---
 
-**Note:** This package requires an active Dewey account and API key. Visit [Dewey](https://dewey.works) to learn more.
+**Note:** This package requires an active Dewey account and API key. Visit [Dewey](https://deweydata.io) to learn more.
