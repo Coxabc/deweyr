@@ -31,6 +31,7 @@
 #'
 #' @export
 get_dewey_urls <- function(api_key, data_id) {
+    data_id <- parse_url(data_id)
     script <- system.file("python/get_dewey_urls.py", package = "deweyr")
     result_raw <- system2(
         "uv",
