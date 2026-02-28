@@ -4,22 +4,29 @@ Version: 0.0.0.9000
 Authors@R: 
         c(
         person("Alyssa", "Cox", email = "cox24018@byui.edu", role = c("aut", "cre")),
+        person("Mitchell", "Mecham", email = 'mechamit000@gmail.com',role = "aut"),
         person("Brock", "Ellis", role = "aut"),
         person("Sheldon", "Downs", role = "aut"),
         person("Stockton", "Lawerence", role = "aut"),
-        person("Mitchell", "Mecham", role = "aut"),
         person("Phillip", "Rosequist", role = "aut")
     )
 Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports:
-    magrittr,
+    DBI,
+    duckdb,
+    glue,
+    tibble,
+    jsonlite
+Suggests:
     dplyr,
-    readr
-Suggests: 
-    testthat (>= 3.0.0)
+    magrittr,
+    readr,
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
 Config/testthat/edition: 3
+VignetteBuilder: knitr
