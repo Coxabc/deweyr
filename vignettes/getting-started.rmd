@@ -1,0 +1,135 @@
+---
+title: "Getting Started with deweyr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with deweyr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Prerequisites
+
+`deweyr` uses [uv](https://github.com/astral-sh/uv) under the hood to run Python scripts without requiring a Python installation. Install uv before using the package:
+
+**Windows (PowerShell):**
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+**Mac/Linux:**
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Windows + OneDrive Users
+
+If you have OneDrive installed, you may encounter slow calls or hardlink errors with uv. Fix this by setting the uv cache to a directory outside OneDrive. Add the following as a system environment variable:
+
+```
+UV_CACHE_DIR=C:\uv-cache
+```
+
+See the `vignette("onedrive-uv-cache")` for full details.
+
+---
+
+## Authentication
+
+You will need a Dewey API key. Set it as an environment variable in your `.Renviron`:
+
+```r
+DEWEY_API_KEY=your_api_key_here
+```
+
+Then access it in your scripts with:
+
+```r
+api_key <- Sys.getenv("DEWEY_API_KEY")
+```
+
+---
+
+## Workflow
+
+### 1. Preview the data
+
+Before downloading, use `preview_dewey()` to explore the dataset — see column names, types, and a sample of the data:
+
+```r
+library(deweyr)
+
+api_key <- Sys.getenv("DEWEY_API_KEY")
+data_id <- "prj_evgjik8m__fldr_zzpetxhxnakvp3qyi"
+
+df_preview <- preview_dewey(api_key, data_id)
+df_preview
+```
+
+To just get column names without fetching any rows:
+
+```r
+colnames(preview_dewey(api_key, data_id, limit = 0))
+```
+
+---
+
+### 2. Download the data
+
+Use `download_dewey()` to download the dataset as parquet files to a local directory.
+
+**Let deweyr choose the partition (recommended):**
+> **Note:** This only works if Dewey provides a default partition column for the dataset. If not, you will get an error listing the available columns — in that case supply a column name explicitly or pass `partition = NULL`.
+```r
+base_dir <- "C:/dewey-downloads"
+base_dir <- "C:/Users/mecha/outsidedrive/488_dewey_test/dewey-downloads"
+
+download_dewey(api_key, data_id, base_dir)
+```
+
+**Supply your own partition column:**
+```r
+download_dewey(api_key, data_id, base_dir, partition = "MONTH_DATE")
+```
+
+**No partitioning — single parquet file:**
+```r
+download_dewey(api_key, data_id, base_dir, partition = NULL)
+```
+
+**Overwrite an existing download:**
+```r
+download_dewey(api_key, data_id, base_dir, partition = "MONTH_DATE", overwrite = TRUE) 
+```
+
+`download_dewey()` returns the path to the downloaded folder invisibly, so you can pipe directly into `read_dewey()`.
+
+---
+
+### 3. Read the data
+
+Use `read_dewey()` to read a previously downloaded dataset back into R as a tibble:
+
+```r
+df <- read_dewey("C:/your/path/to/dewey-downloads/airline-employment")
+df
+
+---
+
+### 4. Download and read in one step
+
+```r
+df <- download_dewey(api_key, data_id, base_dir, partition = "MONTH_DATE", overwrite=TRUE) |>
+  read_dewey()
+```
+
+---
+
+## Notes
+
+- Downloaded data is stored as partitioned or single parquet files under `base_dir/dataset-name/`
+- `read_dewey()` does not require an API key — once downloaded, the data is yours
+- Passing an existing folder path to `download_dewey()` will error unless `overwrite = TRUE` is set

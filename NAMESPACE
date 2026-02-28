@@ -2,3 +2,7 @@
 
 export(dewey_download)
 export(dewey_download_py)
+export(download_dewey)
+export(get_dewey_urls)
+export(preview_dewey)
+export(read_dewey)

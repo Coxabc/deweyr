@@ -1,0 +1,162 @@
+---
+title: "Advanced Queries with deweyr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Advanced Queries with deweyr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Overview
+
+`deweyr` gives you two levels of control over your data:
+
+1. **At download time** — filter rows and select columns before the data ever hits your disk
+2. **At read time** — filter rows with `where` in `read_dewey()`, or bypass it entirely and write raw DuckDB SQL
+
+The second option is where things get powerful. Since downloaded data is stored as parquet, DuckDB can push predicates and aggregations down into the file scan itself — meaning you can run SQL over millions of rows without ever loading the full dataset into R memory.
+
+---
+
+## Filtering and Selecting at Download
+
+The cheapest query is one that never downloads data you don't need. Use `where` and `select` in `download_dewey()` to trim the dataset before it hits your disk:
+
+```{r, eval=FALSE}
+# Only download Major carriers after Feb 2025, and only the columns you need
+download_dewey(
+    api_key, data_id, base_dir,
+    partition = "MONTH_DATE_PARSED",
+    where = "CARRIER_GROUP = 'Major' AND MONTH_DATE_PARSED > '2025-02-01'",
+    select = c("CARRIER_NAME", "FULL_TIME", "PART_TIME", "TOTAL", "MONTH_DATE_PARSED")
+)
+```
+
+This runs entirely on the remote parquet files via DuckDB's httpfs extension — only the filtered, projected data gets written locally.
+
+---
+
+## Simple Reads with `read_dewey()`
+
+For basic filtering on already-downloaded data, use the `where` argument in `read_dewey()`:
+
+```{r, eval=FALSE}
+path <- "C:/your/path/to/dewey-downloads/airline-employment"
+
+# Filter to Major carriers only
+df <- read_dewey(path, where = "CARRIER_GROUP = 'Major'")
+```
+
+---
+
+## Advanced Queries with Raw DuckDB
+
+For anything beyond simple filtering — aggregations, window functions, joins — write the SQL yourself. DuckDB's query optimizer will handle predicate pushdown, projection pruning, and parallel reads automatically, which is significantly faster than loading everything into a tibble first and then using dplyr.
+
+### Setup
+
+```{r, eval=FALSE}
+library(DBI)
+library(duckdb)
+library(glue)
+
+
+path <- "C:/your/path/to/dewey-downloads/airline-employment"
+
+# Always use forward slashes for DuckDB on Windows
+path_read <- gsub("\\\\", "/", path)
+
+con <- DBI::dbConnect(duckdb::duckdb())
+```
+
+> **Note:** Always include `hive_partitioning=true` in your `read_parquet()` call if the dataset was downloaded with a partition column — otherwise the partition column will be missing from your results.
+
+---
+
+### GROUP BY Aggregations
+
+Summarise average full-time and part-time employees per carrier:
+
+```{r, eval=FALSE}
+df_avg <- tibble::as_tibble(DBI::dbGetQuery(con, glue(
+    "SELECT CARRIER_NAME, CARRIER_GROUP,
+    AVG(CAST(REPLACE(FULL_TIME, ',', '') AS INTEGER)) as avg_full_time,
+    AVG(CAST(REPLACE(PART_TIME, ',', '') AS INTEGER)) as avg_part_time
+   FROM read_parquet('{path_read}/**/*.parquet', hive_partitioning=true)
+   GROUP BY CARRIER_NAME, CARRIER_GROUP
+   ORDER BY avg_full_time DESC"
+)))
+```
+
+---
+
+### Window Functions
+
+Compute a running total of employees per carrier across all time periods:
+
+```{r, eval=FALSE}
+df_window <- tibble::as_tibble(DBI::dbGetQuery(con, glue::glue(
+    "SELECT *,
+    SUM(CAST(REPLACE(TOTAL, ',', '') AS INTEGER))
+      OVER (PARTITION BY CARRIER_NAME ORDER BY MONTH_DATE_PARSED) as running_total
+   FROM read_parquet('{path_read}/**/*.parquet', hive_partitioning=true)"
+)))
+```
+
+> **Note:** `DBI::dbGetQuery()` returns a base R data frame which prints every row.
+> Always wrap with `tibble::as_tibble()` to get clean truncated printing.
+---
+
+### Cleanup
+
+Always disconnect when you're done:
+
+```{r, eval=FALSE}
+DBI::dbDisconnect(con)
+```
+
+---
+
+## Why Raw SQL Instead of dplyr?
+
+When you call `read_dewey()` it loads the entire result into a tibble in R memory before you can filter or aggregate with dplyr. With raw DuckDB SQL, the filtering and aggregation happen inside the parquet scan itself — DuckDB never loads rows it doesn't need. For large datasets this is the difference between a query that takes seconds and one that takes minutes or runs out of memory.
+
+Use `read_dewey()` for convenience on small or pre-filtered datasets. Use raw DuckDB SQL when performance matters.
+
+---
+
+### Overkill: Rank Carriers by Growth
+
+For the truly unhinged — rank carriers by full-time employee growth rate over time, 
+using a window function to compute the first and last recorded value per carrier:
+
+While this looks dumb, SQL is much quicker than R's tidyverse for massive datasets. Should you have a predictable transformation, it may be wise to do it while you read in using duckdb.
+
+```{r, eval=FALSE}
+df_growth <- tibble::as_tibble(DBI::dbGetQuery(con, glue(
+    "WITH bounds AS (
+    SELECT
+      CARRIER_NAME,
+      FIRST_VALUE(CAST(REPLACE(FULL_TIME, ',', '') AS INTEGER))
+        OVER (PARTITION BY CARRIER_NAME ORDER BY MONTH_DATE_PARSED
+              ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as first_headcount,
+      LAST_VALUE(CAST(REPLACE(FULL_TIME, ',', '') AS INTEGER))
+        OVER (PARTITION BY CARRIER_NAME ORDER BY MONTH_DATE_PARSED
+              ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as last_headcount,
+      MONTH_DATE_PARSED
+    FROM read_parquet('{path_read}/**/*.parquet', hive_partitioning=true)
+  )
+  SELECT DISTINCT
+    CARRIER_NAME,
+    first_headcount,
+    last_headcount,
+    ROUND((last_headcount - first_headcount) * 100.0 / first_headcount, 2) as pct_growth,
+    RANK() OVER (ORDER BY (last_headcount - first_headcount) * 1.0 / first_headcount DESC) as growth_rank
+  FROM bounds
+  ORDER BY growth_rank"
+)))
+```

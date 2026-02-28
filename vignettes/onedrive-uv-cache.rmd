@@ -1,0 +1,48 @@
+# uv Cache Conflict with OneDrive
+
+## The Problem
+
+When OneDrive is installed on Windows, it can sync folders inside `AppData\Local` — including uv's default cache directory (`C:\Users\<user>\AppData\Local\uv\cache`). 
+
+uv uses **hardlinks** to efficiently reuse cached packages across environments instead of copying files. OneDrive marks synced files as "cloud files", which are incompatible with hardlinks. This causes uv to fail with:
+
+```
+error: Failed to install: <package>.whl
+  Caused by: failed to hardlink file from ...
+  The cloud operation cannot be performed on a file with incompatible hardlinks. (os error 396)
+```
+
+The result is that uv **reinstalls all dependencies from scratch on every call**, making repeated script invocations very slow even though the cache appears to exist.
+
+## The Fix
+
+Move the uv cache to a directory outside of OneDrive's reach.
+
+### Temporary (current session only)
+
+In PowerShell:
+```powershell
+$env:UV_CACHE_DIR = "C:\uv-cache"
+```
+
+### Permanent (recommended)
+
+Add a system environment variable so it persists across sessions:
+
+1. Open **System Properties** → **Advanced** → **Environment Variables**
+2. Under **User variables**, click **New**
+3. Set:
+   - Variable name: `UV_CACHE_DIR`
+   - Variable value: `C:\uv-cache`
+4. Click OK and restart your terminal
+
+### Verify it worked
+
+```powershell
+uv cache dir
+# Should now return C:\uv-cache
+```
+
+## Why This Matters for deweyr
+
+`deweyr` calls uv under the hood to run Python scripts via `system2()`. Without a working cache, every call to `preview_dewey()` or `download_dewey()` will reinstall `deweypy` and all its dependencies, adding significant latency. With the cache working correctly, uv reuses the existing Python environment and calls are fast.
