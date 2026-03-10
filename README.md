@@ -30,13 +30,15 @@ The easiest way to get started - no Python installation required:
 ```r
 library(deweyr)
 
-dewey_download(
+download_dewey(
   api_key = "your-api-key",
   folder_id = "your-folder-id"
 )
 ```
 
 > **First-time setup:** If UV isn't installed, `deweyr` will install it automatically. You may see a message recommending you restart your terminal for optimal performance in future runs.
+
+
 
 ### Method 2: Using Existing Python
 
@@ -55,7 +57,7 @@ dewey_download_py(
 ### Basic Download
 ```r
 # Download to default location (./dewey-downloads)
-dewey_download(
+download_dewey(
   api_key = "your-api-key",
   folder_id = "abc123"
 )
@@ -64,7 +66,7 @@ dewey_download(
 ### Custom Download Location
 ```r
 # Specify where to save files
-dewey_download(
+download_dewey(
   api_key = "your-api-key",
   folder_id = "abc123",
   download_path = "C:/Users/YourName/Documents/data"
@@ -75,9 +77,55 @@ dewey_download(
 
 You can use either a folder ID or the full Dewey URL:
 ```r
-dewey_download(
+download_dewey(
   api_key = "your-api-key",
   folder_id = "https://api.deweydata.io/api/v1/external/data/abc123"
+)
+```
+
+## Duck DB Options
+
+### Download from Duck DB
+
+```r
+download_dewey_duck(
+  api_key = "your-api-key",
+  data_id = "dataset-from-deweydata",
+  output_dir = "base-directory-to-place-download",
+  partition = "column-name-to-partition-by",
+  where = NULL,
+  select = NULL,
+  overwrite=FALSE
+)
+```
+
+### Read Using Duck DB
+
+```r
+read_dewey_duck(
+  path = "path-to-read-in-already-downloaded-data",
+  where = NULL
+)
+```
+
+### Get Dewey URL 
+
+```r
+get_dewey_urls_duck(
+  api_key = "your-api-key",
+  data_id = "dataset-from-deweydata",
+  preview = FALSE
+)
+```
+
+### Preview with Duck DB
+
+```r
+preview_dewey_duck(
+  api_key = "your-api-key",
+  data_id = "dataset-from-deweydata",
+  limit = 10,
+  where = NULL
 )
 ```
 
@@ -87,7 +135,7 @@ dewey_download(
 
 Adjust the number of workers for faster downloads (default is 8):
 ```r
-dewey_download(
+download_dewey(
   api_key = "your-api-key",
   folder_id = "abc123",
   num_workers = 16  # Use 16 parallel workers
@@ -99,21 +147,21 @@ dewey_download(
 For datasets partitioned by date, you can filter which partitions to download:
 ```r
 # Download only data from 2024 onwards
-dewey_download(
+download_dewey(
   api_key = "your-api-key",
   folder_id = "abc123",
   partition_key_after = "2024-01-01"
 )
 
 # Download only data up to a certain date
-dewey_download(
+download_dewey(
   api_key = "your-api-key",
   folder_id = "abc123",
   partition_key_before = "2023-12-31"
 )
 
 # Download a specific date range
-dewey_download(
+download_dewey(
   api_key = "your-api-key",
   folder_id = "abc123",
   partition_key_after = "2024-01-01",
