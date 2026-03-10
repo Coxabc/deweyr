@@ -1,3 +1,11 @@
+---
+title: "OneDrive UV Cache"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{OneDrive UV Cache}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
 # uv Cache Conflict with OneDrive
 
 ## The Problem

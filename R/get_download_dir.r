@@ -19,11 +19,13 @@
 #' @noRd
 get_download_dir <- function(create = TRUE) {
     download_path <- file.path(getwd(), "dewey-downloads")
-
     if (create && !dir.exists(download_path)) {
         dir.create(download_path, recursive = TRUE)
         message("Created download directory: ", download_path)
     }
-
-    download_path
+    if (Sys.info()[["sysname"]] == "Darwin") {
+        shQuote(download_path)
+    } else {
+        download_path
+    }
 }
