@@ -16,7 +16,7 @@ knitr::opts_chunk$set(eval = FALSE)
 `deweyr` gives you two levels of control over your data:
 
 1. **At download time** — filter rows and select columns before the data ever hits your disk
-2. **At read time** — filter rows with `where` in `read_dewey()`, or bypass it entirely and write raw DuckDB SQL
+2. **At read time** — filter rows with `where` in `read_dewey_duck()`, or bypass it entirely and write raw DuckDB SQL
 
 The second option is where things get powerful. Since downloaded data is stored as parquet, DuckDB can push predicates and aggregations down into the file scan itself — meaning you can run SQL over millions of rows without ever loading the full dataset into R memory.
 
@@ -24,11 +24,11 @@ The second option is where things get powerful. Since downloaded data is stored 
 
 ## Filtering and Selecting at Download
 
-The cheapest query is one that never downloads data you don't need. Use `where` and `select` in `download_dewey()` to trim the dataset before it hits your disk:
+The cheapest query is one that never downloads data you don't need. Use `where` and `select` in `download_dewey_duck()` to trim the dataset before it hits your disk:
 
 ```{r, eval=FALSE}
 # Only download Major carriers after Feb 2025, and only the columns you need
-download_dewey(
+download_dewey_duck(
     api_key, data_id, base_dir,
     partition = "MONTH_DATE_PARSED",
     where = "CARRIER_GROUP = 'Major' AND MONTH_DATE_PARSED > '2025-02-01'",
@@ -40,15 +40,15 @@ This runs entirely on the remote parquet files via DuckDB's httpfs extension —
 
 ---
 
-## Simple Reads with `read_dewey()`
+## Simple Reads with `read_dewey_duck()`
 
-For basic filtering on already-downloaded data, use the `where` argument in `read_dewey()`:
+For basic filtering on already-downloaded data, use the `where` argument in `read_dewey_duck()`:
 
 ```{r, eval=FALSE}
 path <- "C:/your/path/to/dewey-downloads/airline-employment"
 
 # Filter to Major carriers only
-df <- read_dewey(path, where = "CARRIER_GROUP = 'Major'")
+df <- read_dewey_duck(path, where = "CARRIER_GROUP = 'Major'")
 ```
 
 ---
