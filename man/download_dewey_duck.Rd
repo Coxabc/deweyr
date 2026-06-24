@@ -12,7 +12,8 @@ download_dewey_duck(
   overwrite = FALSE,
   file_name = NULL,
   where = NULL,
-  select = NULL
+  select = NULL,
+  batch_size = 25
 )
 }
 \arguments{
@@ -37,6 +38,13 @@ Example: \code{where = "CARRIER_GROUP = 'Major'"}}
 \item{select}{Optional vector of column indices, ranges, or names to download.
 Accepts mixed input e.g. \code{c(1:3, 7, "CARRIER_NAME")}. The partition
 column will always be added automatically if missing.}
+
+\item{batch_size}{Number of source files to read per DuckDB query. The dataset's
+file manifest is processed in batches of this size so we never open thousands of
+remote files at once — a single read over the whole manifest fires thousands of
+simultaneous requests at the Dewey download API and triggers HTTP 500 errors on
+large, unpartitioned datasets (e.g. Veraset Visits). Defaults to 25. Lower it if
+you still hit request errors; raise it for throughput on small, reliable datasets.}
 }
 \value{
 The path to the downloaded dataset folder, invisibly. Pipe into
